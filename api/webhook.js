@@ -1,5 +1,6 @@
-import { neon } from '@neondatabase/serverless';
-import axios from 'axios';
+
+const { neon } = require('@neondatabase/serverless');
+const axios = require('axios');
 
 export default async function handler(req, res) {
   // 1. 初始化数据库连接（使用你存好的环境变量）
