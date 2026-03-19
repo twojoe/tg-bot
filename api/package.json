@@ -1,5 +1,5 @@
 {
-  "name": "my-tg-bot",
+  "name": "tg-bot",
   "version": "1.0.0",
   "main": "api/webhook.js",
   "dependencies": {
