@@ -28,9 +28,10 @@ export default async function handler(req, res) {
         const users = await sql`SELECT * FROM users WHERE tg_id = ${tgId}`;
 
         if (users.length === 0) {
+
           const result = await sql`
-            INSERT INTO users (tg_id, username) 
-            VALUES (${tgId}, ${username}) 
+            INSERT INTO users (tg_id, username, is_premium, expire_at) 
+            VALUES (${tgId}, ${username},true, NOW() + INTERVAL '15 days')
             ON CONFLICT (tg_id) DO UPDATE SET username = EXCLUDED.username
             RETURNING *
           `;
@@ -38,8 +39,17 @@ export default async function handler(req, res) {
             throw new Error('用户创建失败，数据库未返回数据');
           }
           currentUser = result[0];
+          currentUser.tip = '新朋友获得15天的免费会员资格。';
         } else {
           currentUser = users[0];
+          if (currentUser.username !== username) {
+            await sql`
+              UPDATE users 
+              SET username = ${username} 
+              WHERE tg_id = ${tgId}
+            `;
+            currentUser.username = username; // 更新当前用户对象中的用户名
+          }
         }
       } catch (dbError) {
         console.error('数据库操作失败:', dbError);
@@ -57,7 +67,7 @@ export default async function handler(req, res) {
         }
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${escapeHtml(username)}，${welcomeText}\n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9">会员专属频道</a> 限时免费`,
+          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${currentUser.tip}\n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9">会员专属频道</a> 限时免费`,
           parse_mode: 'HTML'
         });
       }
