@@ -10,6 +10,17 @@ function escapeHtml(text) {
     .replace(/"/g, String.fromCharCode(38) + 'quot;');
 }
 
+function formatDateToChinese(dateStr) {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`;
+}
+
 const CHANNEL_ID = '-1003737991092';
 
 export default async function handler(req, res) {
@@ -114,11 +125,12 @@ export default async function handler(req, res) {
       if (text === '/start') {
         let welcomeText = '未开通会员。';
         if (currentUser?.is_premium) {
-          welcomeText = `您是我们的尊贵会员，会员时间：${escapeHtml(currentUser.expire_at)}。`;
+          welcomeText = `您是我们的尊贵会员，会员时间：${formatDateToChinese(currentUser.expire_at)}。`;
         }
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${tip}\n\n🎉 <a href="https://t.me/+Gj864gFu88M5Njc1">会员专属频道</a> 限时免费`,
+          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${tip}\n🎉 <a href="https://t.me/+Gj864gFu88M5Njc1">会员专属频道</a> 限时免费。
+          \n客服：@joe998`,
           parse_mode: 'HTML'
         });
       }
