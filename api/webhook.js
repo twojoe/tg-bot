@@ -44,11 +44,11 @@ export default async function handler(req, res) {
       if (text === '/start') {
         let welcomeText = `未开通会员。`;
         if (currentUser?.is_premium) {
-          welcomeText = `您是我们的尊贵会员，会员时间：${currentUser.expire_at}。\n\n🎉 会员专属频道： https://t.me/+1ZMhJoiZ8hc5Yzk9`;
+          welcomeText = `您是我们的尊贵会员，会员时间：${currentUser.expire_at}。`;
         }
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${username}，数据库已连通，${welcomeText}`
+          text: `你好 ${username}，${welcomeText} \n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9" >会员专属频道</a> 限时免费`
         });
       }
 
