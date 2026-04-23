@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       if (text === '/start') {
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${username}，数据库已连通,你的id是 ${currentUser.id}！`
+          text: `你好 ${username}，数据库已连通,你的id是 ${currentUser.tg_id}！`
         });
       }
 
