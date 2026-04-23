@@ -10,12 +10,67 @@ function escapeHtml(text) {
     .replace(/"/g, String.fromCharCode(38) + 'quot;');
 }
 
+const CHANNEL_ID = '-1003737991092';
+
 export default async function handler(req, res) {
   const sql = neon(process.env.DATABASE_URL);
   const botToken = process.env.BOT_TOKEN;
 
   if (req.method === 'POST') {
     try {
+      // 处理频道加入请求审核
+      if (req.body.chat_join_request) {
+        const { chat_join_request } = req.body;
+        const chatId = String(chat_join_request.chat.id);
+        const userId = chat_join_request.from.id;
+
+        // 只处理目标频道的请求
+        if (chatId !== CHANNEL_ID) {
+          return res.status(200).send('ok');
+        }
+
+        let currentUser;
+        try {
+          const users = await sql`SELECT * FROM users WHERE tg_id = ${userId}`;
+          if (users.length === 0) {
+            const result = await sql`
+              INSERT INTO users (tg_id, username, is_premium, expire_at) 
+              VALUES (${userId}, ${chat_join_request.from.username || 'User'}, true, NOW() + INTERVAL '15 days')
+              ON CONFLICT (tg_id) DO UPDATE SET username = EXCLUDED.username
+              RETURNING *
+            `;
+            currentUser = result?.[0];
+          } else {
+            currentUser = users[0];
+            if (currentUser.username !== chat_join_request.from.username) {
+              await sql`UPDATE users SET username = ${chat_join_request.from.username || 'User'} WHERE tg_id = ${userId}`;
+              currentUser.username = chat_join_request.from.username || 'User';
+            }
+          }
+        } catch (dbError) {
+          console.error('数据库操作失败:', dbError);
+          return res.status(200).send('ok');
+        }
+
+        if (currentUser?.is_premium) {
+          await axios.post(`https://api.telegram.org/bot${botToken}/approveChatJoinRequest`, {
+            chat_id: CHANNEL_ID,
+            user_id: userId
+          });
+        } else {
+          await axios.post(`https://api.telegram.org/bot${botToken}/declineChatJoinRequest`, {
+            chat_id: CHANNEL_ID,
+            user_id: userId
+          });
+          await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            chat_id: userId,
+            text: '您还不是会员，无法加入频道。请发送 /start 了解会员信息。'
+          });
+        }
+        return res.status(200).send('ok');
+      }
+
+      // 处理普通消息
       const { message } = req.body;
       if (!message || !message.from) return res.status(200).send('ok');
 
@@ -24,14 +79,14 @@ export default async function handler(req, res) {
       const text = message.text;
 
       let currentUser;
+      let tip = '';
       try {
         const users = await sql`SELECT * FROM users WHERE tg_id = ${tgId}`;
 
         if (users.length === 0) {
-
           const result = await sql`
             INSERT INTO users (tg_id, username, is_premium, expire_at) 
-            VALUES (${tgId}, ${username},true, NOW() + INTERVAL '15 days')
+            VALUES (${tgId}, ${username}, true, NOW() + INTERVAL '15 days')
             ON CONFLICT (tg_id) DO UPDATE SET username = EXCLUDED.username
             RETURNING *
           `;
@@ -39,16 +94,12 @@ export default async function handler(req, res) {
             throw new Error('用户创建失败，数据库未返回数据');
           }
           currentUser = result[0];
-          currentUser.tip = '新朋友获得15天的免费会员资格。';
+          tip = '新朋友获得15天的免费会员资格。';
         } else {
           currentUser = users[0];
           if (currentUser.username !== username) {
-            await sql`
-              UPDATE users 
-              SET username = ${username} 
-              WHERE tg_id = ${tgId}
-            `;
-            currentUser.username = username; // 更新当前用户对象中的用户名
+            await sql`UPDATE users SET username = ${username} WHERE tg_id = ${tgId}`;
+            currentUser.username = username;
           }
         }
       } catch (dbError) {
@@ -67,7 +118,7 @@ export default async function handler(req, res) {
         }
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${currentUser.tip}\n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9">会员专属频道</a> 限时免费`,
+          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${tip}\n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9">会员专属频道</a> 限时免费`,
           parse_mode: 'HTML'
         });
       }
@@ -75,7 +126,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'ok' });
     } catch (e) {
       console.error(e);
-      return res.status(500).json({ error: e.message });
+      return res.status(200).send('ok');
     }
   }
   res.status(200).send('大脑升级完毕！');
