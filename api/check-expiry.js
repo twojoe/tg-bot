@@ -1,12 +1,12 @@
-import { createClient } from '@neondatabase/serverless';// 假设你用的是 Neon
-import { Bot } from 'grammy'; // 或你使用的其他库
+import { neon } from '@neondatabase/serverless';
+import axios from 'axios';
 
-const bot = new Bot(process.env.BOT_TOKEN);
-const sql = createClient(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL);
+const CHANNEL_ID = process.env.CHANNEL_ID || '-1003737991092';
 
 export default async function handler(req, res) {
   // 安全校验：防止别人恶意调用你的接口执行踢人操作
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized');
   }
@@ -21,15 +21,21 @@ export default async function handler(req, res) {
     for (const user of users) {
       try {
         // 2. 调用电报 API 踢人 (ban 后立即 unban 相当于踢出)
-        await bot.api.banChatMember(process.env.CHANNEL_ID, user.tg_id);
-        await bot.api.unbanChatMember(process.env.CHANNEL_ID, user.tg_id);
+        await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/banChatMember`, {
+          chat_id: CHANNEL_ID,
+          user_id: user.tg_id
+        });
+        await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/unbanChatMember`, {
+          chat_id: CHANNEL_ID,
+          user_id: user.tg_id
+        });
 
         // 3. 更新数据库状态
         await sql`UPDATE users SET is_premium = FALSE WHERE tg_id = ${user.tg_id}`;
         
         console.log(`已移除过期用户: ${user.tg_id}`);
       } catch (err) {
-        console.error(`踢除用户 ${user.tg_id} 失败:`, err);
+        console.error(`踢除用户 ${user.tg_id} 失败:`, err.response?.data || err.message);
       }
     }
 
