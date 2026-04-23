@@ -7,13 +7,15 @@ const is_check=process.env.IS_CHECK === 'true';
 
 
 export default async function handler(req, res) {
+  console.log('is_check:', process.env.IS_CHECK); 
+  if (!is_check) {
+    console.log('过期检查已关闭');
+    return res.status(200).end('过期检查已关闭');;
+  }
   // 安全校验：防止别人恶意调用你的接口执行踢人操作
   const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized');
-  }
-  if (!is_check) {
-    return res.status(200).end('过期检查已关闭');;
   }
 
   try {
