@@ -1,5 +1,5 @@
-const { createClient } = require('@neondatabase/serverless'); // 假设你用的是 Neon
-const { Bot } = require('grammy'); // 或你使用的其他库
+import { createClient } from '@neondatabase/serverless';// 假设你用的是 Neon
+import { Bot } from 'grammy'; // 或你使用的其他库
 
 const bot = new Bot(process.env.BOT_TOKEN);
 const sql = createClient(process.env.DATABASE_URL);
