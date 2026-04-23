@@ -1,6 +1,15 @@
 import { neon } from '@neondatabase/serverless';
 import axios from 'axios';
 
+function escapeHtml(text) {
+  if (typeof text !== 'string') return String(text);
+  return text
+    .replace(/&/g, String.fromCharCode(38) + 'amp;')
+    .replace(/</g, String.fromCharCode(38) + 'lt;')
+    .replace(/>/g, String.fromCharCode(38) + 'gt;')
+    .replace(/"/g, String.fromCharCode(38) + 'quot;');
+}
+
 export default async function handler(req, res) {
   const sql = neon(process.env.DATABASE_URL);
   const botToken = process.env.BOT_TOKEN;
@@ -42,13 +51,13 @@ export default async function handler(req, res) {
       }
 
       if (text === '/start') {
-        let welcomeText = `未开通会员。`;
+        let welcomeText = '未开通会员。';
         if (currentUser?.is_premium) {
-          welcomeText = `您是我们的尊贵会员，会员时间：${currentUser.expire_at}。`;
+          welcomeText = `您是我们的尊贵会员，会员时间：${escapeHtml(currentUser.expire_at)}。`;
         }
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${username}，${welcomeText} \n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9" >会员专属频道</a> 限时免费`,
+          text: `你好 ${escapeHtml(username)}，${welcomeText}\n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9">会员专属频道</a> 限时免费`,
           parse_mode: 'HTML'
         });
       }
