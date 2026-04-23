@@ -118,7 +118,7 @@ export default async function handler(req, res) {
         }
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           chat_id: tgId,
-          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${tip}\n\n🎉 <a href="https://t.me/+1ZMhJoiZ8hc5Yzk9">会员专属频道</a> 限时免费`,
+          text: `你好 ${escapeHtml(username)}，${welcomeText}\n ${tip}\n\n🎉 <a href="https://t.me/+Gj864gFu88M5Njc1">会员专属频道</a> 限时免费`,
           parse_mode: 'HTML'
         });
       }
