@@ -4,16 +4,16 @@ import axios from 'axios';
 const sql = neon(process.env.DATABASE_URL);
 const CHANNEL_ID = '-1003737991092';
 const is_check=process.env.IS_CHECK === 'true';
-if (!is_check) {
-  console.log('过期检查已关闭');  
-  return;
-}
+
 
 export default async function handler(req, res) {
   // 安全校验：防止别人恶意调用你的接口执行踢人操作
   const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized');
+  }
+  if (!is_check) {
+    return res.status(200).end('过期检查已关闭');;
   }
 
   try {
