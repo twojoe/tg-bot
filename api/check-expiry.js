@@ -4,6 +4,7 @@ import axios from 'axios';
 const sql = neon(process.env.DATABASE_URL);
 const CHANNEL_ID = '-1003737991092';
 const is_check=process.env.IS_CHECK === 'true';
+const adminId = 6333025634; // 替换为你的 Telegram I
 
 
 export default async function handler(req, res) {
@@ -26,6 +27,10 @@ export default async function handler(req, res) {
     `;
 
     for (const user of users) {
+      if (user.tg_id === adminId) {
+        console.log(`跳过管理员: ${user.tg_id}`);
+        continue; // 跳过管理员
+      }
       try {
         // 2. 调用电报 API 踢人 (ban 后立即 unban 相当于踢出)
         await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/banChatMember`, {
