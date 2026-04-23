@@ -2,7 +2,12 @@ import { neon } from '@neondatabase/serverless';
 import axios from 'axios';
 
 const sql = neon(process.env.DATABASE_URL);
-const CHANNEL_ID = process.env.CHANNEL_ID || '-1003737991092';
+const CHANNEL_ID = '-1003737991092';
+const is_check=process.env.IS_CHECK === 'true';
+if (!is_check) {
+  console.log('过期检查已关闭');  
+  return;
+}
 
 export default async function handler(req, res) {
   // 安全校验：防止别人恶意调用你的接口执行踢人操作
