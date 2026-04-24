@@ -2,7 +2,7 @@
 const { OAuth2Client } = require('google-auth-library');
 
 // 建议在 Vercel 的 Environment Variables 中设置此变量
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ;
 const client = new OAuth2Client(CLIENT_ID);
 
 export default async function handler(req, res) {
