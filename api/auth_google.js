@@ -1,5 +1,5 @@
-// google.js
-const { OAuth2Client } = require('google-auth-library');
+// 1. 使用 import 替换 require
+import { OAuth2Client } from 'google-auth-library';
 
 // 建议在 Vercel 的 Environment Variables 中设置此变量
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ;
