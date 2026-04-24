@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <title>Google 登录测试</title>
+    <title>管理员 Google 登录</title>
+    <style>
+        #g_id_onload,
+        .g_id_signin {
+            width: 200px;
+        }
+    </style>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body>
-    <h2>Google 快捷登录示例</h2>
 
-    <div id="g_id_onload"
-         data-client_id="577060628660-gbq6ekfja584ri1736o8ogseee60qpou.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="onGoogleSignIn"
-         data-auto_prompt="false">
+<body>
+    <div style="margin: 10px auto;width: 300px;">
+        <h2>管理员登录</h2>
+
+        <div id="g_id_onload" data-client_id="577060628660-gbq6ekfja584ri1736o8ogseee60qpou.apps.googleusercontent.com"
+            data-context="signin" data-ux_mode="popup" data-callback="onGoogleSignIn" data-auto_prompt="false">
+        </div>
+
+        <div class="g_id_signin" data-type="standard"></div>
     </div>
 
-    <div class="g_id_signin" data-type="standard"></div>
 
     <script>
         async function onGoogleSignIn(response) {
@@ -31,12 +38,12 @@
 
             const result = await res.json();
             if (result.success) {
-                alert(`登录成功！欢迎，${result.user.name}`);
-                console.log("用户信息:", result.user);
+                window.location.href = 'admin.html';
             } else {
                 alert("登录失败：" + result.error);
             }
         }
     </script>
 </body>
+
 </html>

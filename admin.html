@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员管理后台</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { margin: 0; font-size: 20px; }
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header img {
+            width: 36px; height: 36px; border-radius: 50%;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #4a90d9; color: #fff; }
+        .btn-primary:hover { background: #357abd; }
+        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; color: #fff; }
+        .btn-success:hover { background: #219a52; }
+        .search-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .user-list {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+        .user-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .user-item:last-child { border-bottom: none; }
+        .user-meta { display: flex; flex-direction: column; gap: 4px; }
+        .user-name { font-weight: 600; font-size: 15px; }
+        .user-id { color: #888; font-size: 13px; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-premium { background: #d4edda; color: #155724; }
+        .badge-expired { background: #f8d7da; color: #721c24; }
+        .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .actions select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .empty { padding: 40px; text-align: center; color: #888; }
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ 会员管理后台</h1>
+            <div class="user-info">
+                <span id="adminName">加载中...</span>
+                <img id="adminAvatar" src="" alt="">
+                <button class="btn btn-danger" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="输入用户名搜索..." onkeydown="if(event.key==='Enter')searchUser()">
+            <button class="btn btn-primary" onclick="searchUser()">🔍 搜索</button>
+        </div>
+
+        <div class="user-list" id="userList">
+            <div class="empty">请输入用户名进行搜索</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let adminUser = null;
+
+        async function checkLogin() {
+            try {
+                const res = await fetch('/api/me');
+                const data = await res.json();
+                if (!data.success) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                adminUser = data.user;
+                document.getElementById('adminName').textContent = adminUser.name;
+                document.getElementById('adminAvatar').src = adminUser.picture || '';
+            } catch {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function formatDate(d) {
+            if (!d) return '无';
+            const date = new Date(d);
+            return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+        }
+
+        async function searchUser() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return showToast('请输入搜索关键词');
+
+            const list = document.getElementById('userList');
+            list.innerHTML = '<div class="empty">搜索中...</div>';
+
+            try {
+                const res = await fetch('/api/search-user?q=' + encodeURIComponent(q));
+                const data = await res.json();
+                if (!data.success) {
+                    list.innerHTML = '<div class="empty">搜索失败：' + (data.error || '未知错误') + '</div>';
+                    return;
+                }
+                if (data.users.length === 0) {
+                    list.innerHTML = '<div class="empty">未找到用户</div>';
+                    return;
+                }
+                list.innerHTML = data.users.map(u => `
+                    <div class="user-item" data-tg-id="${u.tg_id}">
+                        <div class="user-meta">
+                            <div class="user-name">${u.username || '未知用户'}
+                                <span class="badge ${u.is_premium && new Date(u.expire_at) > new Date() ? 'badge-premium' : 'badge-expired'}">
+                                    ${u.is_premium && new Date(u.expire_at) > new Date() ? '会员中' : '已过期'}
+                                </span>
+                            </div>
+                            <div class="user-id">ID: ${u.tg_id} &nbsp;|&nbsp; 到期: ${formatDate(u.expire_at)}</div>
+                        </div>
+                        <div class="actions">
+                            <select id="sel-${u.tg_id}">
+                                <option value="1month">一月</option>
+                                <option value="3months">一季</option>
+                                <option value="1year">一年</option>
+                            </select>
+                            <button class="btn btn-success" onclick="extendPremium('${u.tg_id}')">开通/续期</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch {
+                list.innerHTML = '<div class="empty">请求失败，请重试</div>';
+            }
+        }
+
+        async function extendPremium(tgId) {
+            const duration = document.getElementById('sel-' + tgId).value;
+            try {
+                const res = await fetch('/api/extend-premium', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: tgId, duration })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    // 刷新当前搜索结果
+                    searchUser();
+                } else {
+                    showToast('失败：' + (data.error || '未知错误'));
+                }
+            } catch {
+                showToast('请求失败，请重试');
+            }
+        }
+
+        checkLogin();
+    </script>
+</body>
+</html>
