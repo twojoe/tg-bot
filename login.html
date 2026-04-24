@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Google 登录测试</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <h2>Google 快捷登录示例</h2>
+
+    <div id="g_id_onload"
+         data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="onGoogleSignIn"
+         data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin" data-type="standard"></div>
+
+    <script>
+        async function onGoogleSignIn(response) {
+            console.log("收到 JWT Token，正在发送至后端...");
+
+            // 4. 将 Token 发送到 Vercel 后端接口
+            const res = await fetch('/api/auth_google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: response.credential })
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                alert(`登录成功！欢迎，${result.user.name}`);
+                console.log("用户信息:", result.user);
+            } else {
+                alert("登录失败：" + result.error);
+            }
+        }
+    </script>
+</body>
+</html>
