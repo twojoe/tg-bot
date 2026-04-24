@@ -133,6 +133,11 @@ export default async function handler(req, res) {
           \n客服：@joe998`,
           parse_mode: 'HTML'
         });
+      }else{
+        await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          chat_id: tgId,
+          text: username+"你好，内容："+text
+        });
       }
 
       return res.status(200).json({ status: 'ok' });
