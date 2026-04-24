@@ -89,40 +89,40 @@ export default async function handler(req, res) {
       const username = message.from.username || 'User';
       const text = message.text;
 
-      let currentUser;
-      let tip = '';
-      try {
-        const users = await sql`SELECT * FROM users WHERE tg_id = ${tgId}`;
+      if (text === '/start') {
+        let currentUser;
+        let tip = '';
+        try {
+          const users = await sql`SELECT * FROM users WHERE tg_id = ${tgId}`;
 
-        if (users.length === 0) {
-          const result = await sql`
+          if (users.length === 0) {
+            const result = await sql`
             INSERT INTO users (tg_id, username, is_premium, expire_at) 
             VALUES (${tgId}, ${username}, true, NOW() + INTERVAL '15 days')
             ON CONFLICT (tg_id) DO UPDATE SET username = EXCLUDED.username
             RETURNING *
           `;
-          if (!result || result.length === 0) {
-            throw new Error('用户创建失败，数据库未返回数据');
+            if (!result || result.length === 0) {
+              throw new Error('用户创建失败，数据库未返回数据');
+            }
+            currentUser = result[0];
+            tip = '新朋友获得15天的免费会员资格。';
+          } else {
+            currentUser = users[0];
+            if (currentUser.username !== username) {
+              await sql`UPDATE users SET username = ${username} WHERE tg_id = ${tgId}`;
+              currentUser.username = username;
+            }
           }
-          currentUser = result[0];
-          tip = '新朋友获得15天的免费会员资格。';
-        } else {
-          currentUser = users[0];
-          if (currentUser.username !== username) {
-            await sql`UPDATE users SET username = ${username} WHERE tg_id = ${tgId}`;
-            currentUser.username = username;
-          }
+        } catch (dbError) {
+          console.error('数据库操作失败:', dbError);
+          await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            chat_id: tgId,
+            text: '连接数据库失败，请稍后再试。'
+          });
+          return res.status(200).send('ok');
         }
-      } catch (dbError) {
-        console.error('数据库操作失败:', dbError);
-        await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          chat_id: tgId,
-          text: '连接数据库失败，请稍后再试。'
-        });
-        return res.status(200).send('ok');
-      }
 
-      if (text === '/start') {
         let welcomeText = '未开通会员。';
         if (currentUser?.is_premium) {
           welcomeText = `您是我们的尊贵会员，会员时间：${formatDateToChinese(currentUser.expire_at)}。`;
