@@ -6,17 +6,11 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const user = await getAuthUser(req);
-    if (!user) {
-        return res.status(401).json({ error: '未登录' });
-    }
 
-    const apiKey = user.binanceApiKey;
-    const apiSecret = user.binanceApiSecret;
+    const apiKey = "p7ef3KUrFPsnbxiJuDni9Zu7fk7pqD9h0CqRzON6wKuTuZU1zNOJA93hrqFrH8hc";
+    const apiSecret = "3qwcLKxw0mtUrWes1Q31vGNPtXrYwjDOCwytSpOHUk84XjfX5A10ZHKCDRgbX9qf";
 
-    if (!apiKey || !apiSecret) {
-        return res.status(400).json({ error: '请先配置币安API Key和Secret' });
-    }
+   
 
     try {
         const timestamp = Date.now();
